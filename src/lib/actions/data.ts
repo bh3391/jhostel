@@ -30,19 +30,30 @@ export async function getRoomBySlug(slug: string) {
   
   return result[0] || null;
 }
-export async function getAboutContent() {
+export async function getAboutContent(): Promise<Record<string, string>> {
   const content = await db
     .select()
     .from(siteContent)
     .where(like(siteContent.key, 'about_%'));
-    
-  // Definisikan tipe Record dengan index signature yang jelas
-  const formattedContent: Record<string, string> = {"about_title": "", "about_subtitle": "", "about_description": "", "about_vision": "", "about_mission": ""};
+
+  // Inisialisasi objek dengan index signature
+  const formattedContent: { [key: string]: string } = {
+    about_title: "",
+    about_subtitle: "",
+    about_description: "",
+    about_vision: "",
+    about_mission: "",
+  };
 
   content.forEach((item) => {
-    // Pastikan item.key tidak null/undefined sebelum dijadikan index
-    if (typeof item.key === 'string') {
-      formattedContent[item.key] = item.value ?? "";
+    if (item.key) {
+      // Karena item.value adalah jsonb, kita harus memastikan nilainya string
+      // Jika jsonb berisi string murni, ia akan masuk ke sini.
+      // Jika nilainya null atau bukan string, kita beri fallback ""
+      const rawValue = item.value;
+      formattedContent[item.key] = typeof rawValue === 'string' 
+        ? rawValue 
+        : JSON.stringify(rawValue ?? ""); 
     }
   });
 
